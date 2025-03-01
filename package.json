@@ -1,0 +1,11 @@
+{
+  "name": "the-resource-library",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/fahimahammed/the-resource-library.git",
+  "author": "fahimahammed <fahimahammed.cse@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "marked": "^15.0.7"
+  }
+}

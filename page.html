@@ -5,16 +5,166 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Markdown Viewer</title>
-    <link rel="stylesheet" href="assets/styles.css">
+
+    <!-- Tailwind CSS with Typography Plugin -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {},
+            },
+            plugins: [function ({ addBase }) {
+                addBase({
+                    '.prose': { maxWidth: "none" }
+                });
+            }]
+        };
+    </script>
+
+    <style>
+        /* Additional Custom Styles */
+        #content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        #content th,
+        #content td {
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+
+        #content th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+        }
+    </style>
 </head>
 
-<body>
-    <header>
-        <h1>📖 Markdown Content</h1>
-        <a href="index.html">⬅ Back to Home</a>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center p-6">
+
+    <header class="w-full max-w-3xl bg-white p-4 shadow-md rounded-lg flex justify-between items-center">
+        <h1 class="text-2xl font-bold">📖 Markdown Content</h1>
+        <a href="index.html" class="text-blue-500 hover:underline">⬅ Back to Home</a>
     </header>
-    <main id="content"></main>
-    <script src="assets/script.js"></script>
+
+    <main id="content" class="prose prose-lg bg-white p-6 mt-4 shadow-md rounded-lg max-w-3xl w-full"></main>
+
+    <!-- Marked.js for Markdown Parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const params = new URLSearchParams(window.location.search);
+            const file = params.get("file");
+
+            if (file) {
+                fetch(`docs/${file}`)
+                    .then(response => response.text())
+                    .then(markdown => {
+                        document.getElementById("content").innerHTML = markdownToHTML(markdown);
+                    })
+                    .catch(error => {
+                        console.error("Error loading file:", error);
+                        document.getElementById("content").innerHTML = "<p class='text-red-500'>Error loading content.</p>";
+                    });
+            }
+        });
+
+        // Custom Renderer for Marked.js
+        const renderer = new marked.Renderer();
+
+        // Style Headings
+        renderer.heading = (heading) => {
+            const { depth, text, tokens } = heading;
+            const sizes = {
+                1: "text-4xl", // H1
+                2: "text-3xl", // H2
+                3: "text-2xl", // H3
+                4: "text-xl",  // H4
+                5: "text-lg",  // H5
+                6: "text-base" // H6
+            };
+
+            return `<h${depth} class="${sizes[depth] || 'text-base'} font-bold my-4">${text}</h${depth}>`;
+        };
+
+        // Style Tables
+        renderer.table = (tableData) => {
+            console.log("Table Data:", tableData);
+
+            // Generate table headers
+            const headers = tableData.header.map(header =>
+                `<th class="border border-gray-300 p-2 bg-gray-200 font-bold">${header.text}</th>`
+            ).join("");
+
+            // Generate table rows
+            const rows = tableData.rows.map(row => {
+                const cells = row.map(cell => {
+                    let content = cell.text;
+
+                    // Check if the cell contains a link
+                    if (cell.tokens && cell.tokens[0]?.type === "link") {
+                        const link = cell.tokens[0];
+                        content = `<a href="${link.href}" class="text-blue-600 underline">${link.text}</a>`;
+                    }
+
+                    return `<td class="border border-gray-300 p-2">${content}</td>`;
+                }).join("");
+
+                return `<tr>${cells}</tr>`;
+            }).join("");
+
+            return `
+        <table class="w-full border-collapse border border-gray-300 my-4">
+            <thead>
+                <tr>${headers}</tr>
+            </thead>
+            <tbody>
+                ${rows}
+            </tbody>
+        </table>
+    `;
+        };
+
+        // Style Ordered Lists
+        renderer.list = (body, ordered, start) => {
+            if (Array.isArray(body.items)) {
+                body = body.items
+                    .map(item => renderer.listitem(renderTokens(item.tokens))) // Process nested tokens
+                    .join("");
+            }
+
+            const tag = ordered ? "ol" : "ul";
+            const startAttr = ordered && start ? `start="${start}"` : "";
+            return `<${tag} class="list-disc list-inside ml-5" ${startAttr}>${body}</${tag}>`;
+        };
+
+        renderer.listitem = (text) => {
+            return `<li class="mb-1">${text}</li>`;
+        };
+
+        // Function to process tokens and convert them into HTML
+        const renderTokens = (tokens) => {
+            return tokens[0].tokens
+                .map(token => {
+                    if (token.type === "link") {
+                        return `<a href="${token.href}" class="text-blue-500 underline">${token.text}</a>`;
+                    }
+                    return token.text || "";
+                })
+                .join("");
+        };
+
+        // Apply Custom Renderer to Marked.js
+        marked.use({ renderer });
+
+        function markdownToHTML(markdown) {
+            return marked.parse(markdown);
+        }
+    </script>
+
 </body>
 
 </html>
