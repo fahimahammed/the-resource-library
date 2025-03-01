@@ -25,7 +25,8 @@ jobs:
         uses: actions/upload-artifact@v4  
         with:
           name: github-pages
-          path: .  
+          path: ./docs  # Change this to only deploy necessary files
+          retention-days: 1  
 
       - name: Deploy to GitHub Pages  
         id: deployment  
