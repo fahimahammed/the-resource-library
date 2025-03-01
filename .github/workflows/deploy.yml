@@ -13,8 +13,15 @@ jobs:
       - name: Checkout Repository  
         uses: actions/checkout@v4  
 
+      - name: Enable GitHub Pages  
+        run: gh api -X POST /repos/${{ github.repository }}/pages --silent
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Setup Pages  
         uses: actions/configure-pages@v4  
+        with:
+          enablement: true  
 
       - name: Upload Pages Artifact  
         uses: actions/upload-artifact@v4  
